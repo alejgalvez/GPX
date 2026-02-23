@@ -280,58 +280,62 @@ body {
     /* Añadido */
 }
 
-.news-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    /* Aumentado de 300px */
-    gap: 28px;
-    /* Aumentado de 20px */
+.ai-dashboard-section {
     margin-top: 60px;
-    /* Aumentado de 40px */
 }
 
-.news-card {
-    background: rgba(255, 255, 255, 0.03);
-    /* Más visible */
-    padding: 28px;
-    /* Aumentado de 20px */
-    border-radius: 16px;
-    /* Aumentado de 12px */
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    /* Más visible */
-    transition: all 0.2s;
+.ai-panel {
+    max-width: 720px;
+    background: transparent;
 }
 
-.news-card:hover {
-    background: rgba(255, 255, 255, 0.05);
-    transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.news-meta {
-    font-size: 12px;
-    color: #666;
+.ai-panel-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     margin-bottom: 12px;
-    /* Aumentado de 10px */
+}
+
+.ai-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
     text-transform: uppercase;
-    /* Añadido */
-    letter-spacing: 0.5px;
-    /* Añadido */
+    letter-spacing: 0.08em;
+    background: rgba(255, 255, 255, 0.06);
+    color: #facc15;
+    width: fit-content;
 }
 
-.news-title {
-    font-size: 17px;
-    /* Aumentado de 16px */
-    font-weight: 600;
-    margin-bottom: 12px;
-    /* Aumentado de 10px */
-    line-height: 1.4;
-    /* Añadido */
-}
-
-.news-excerpt {
+.ai-subtitle {
     font-size: 14px;
     color: #aaa;
+}
+
+.ai-description {
+    font-size: 14px;
+    color: #ddd;
+    margin-bottom: 16px;
+    max-width: 520px;
+}
+
+.ai-button {
+    margin-top: 4px;
+    padding-left: 28px;
+    padding-right: 28px;
+}
+
+.ai-output {
+    display: none;
+    margin-top: 16px;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 16px;
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-color);
+    color: #e2e8f0;
     line-height: 1.6;
-    /* Añadido */
+    font-size: 0.95rem;
 }
