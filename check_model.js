@@ -2,7 +2,7 @@ require('dotenv').config();
 const {
     GoogleGenerativeAI
 } = require("@google/generative-ai");
-//comentario de prueba
+//comentario
 async function check() {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     console.log("📡 Conectando con Google para ver tus modelos disponibles...");
