@@ -40,6 +40,16 @@
                                 <input type="email" name="email" placeholder="nombre@ejemplo.com" required>
                             </div>
                             <div class="form-group">
+                                <label>Número de teléfono</label>
+                                <div class="phone-field">
+                                    <select name="country_code" required class="country-select">
+                                        <option value="+34">🇪🇸 +34</option>
+                                        <option value="+44">🇬🇧 +44</option>
+                                    </select>
+                                    <input type="tel" name="phone" placeholder="612345678" required pattern="[0-9]{6,15}">
+                                </div>
+                            </div>
+                            <div class="form-group">
                                 <label>Contraseña</label>
                                 <input type="password" name="password" placeholder="••••••••" required minlength="6">
                             </div>

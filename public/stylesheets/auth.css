@@ -87,6 +87,54 @@ body {
     color: #666;
 }
 
+.phone-field {
+    display: flex;
+    gap: 8px;
+}
+
+.country-select {
+    padding: 12px 10px;
+    background: rgba(0,0,0,0.4);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    min-width: 110px;
+}
+
+.phone-field input[type="tel"] {
+    flex: 1;
+}
+
+/* Input sin fondo para mostrar teléfono actual de forma neutra */
+.no-bg-input {
+    background: transparent !important;
+    color: #111 !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    box-shadow: none !important;
+    padding: 12px 14px !important;
+}
+
+/* Estilos específicos para la sección de vinculación de teléfono
+   - quitar fondo gris de inputs y select
+   - texto en negro
+*/
+.phone-bind .country-select,
+.phone-bind input[type="tel"] {
+    background: #fff !important;
+    color: #111 !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+}
+
+.phone-bind .country-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.phone-bind input[type="tel"]::placeholder {
+    color: #999 !important;
+}
+
 .auth-box .btn-primary {
     width: 100%;
     margin-top: 12px;

@@ -139,6 +139,54 @@ router.get('/support', function (req, res, next) {
   res.render('support', { title: 'Soporte - Galpe Exchange' });
 });
 
+// Mostrar formulario para cambiar/desvincular teléfono (requiere auth)
+router.get('/support/change-phone', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    const baseUser = usuarioDao.getById(userId);
+    if (!baseUser) return res.redirect('/auth/logout');
+
+    res.render('change-phone', {
+      title: 'Cambiar teléfono - Soporte',
+      user: baseUser,
+      error: null,
+      success: null
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Procesar cambio/desvinculación de teléfono
+router.post('/support/change-phone', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    const { phone, country_code, action } = req.body;
+
+    if (action === 'unlink') {
+      usuarioDao.updatePhone(userId, null, null);
+      // Actualizar sesión
+      req.session.user = usuarioDao.getById(userId);
+      return res.render('change-phone', { title: 'Cambiar teléfono - Soporte', user: req.session.user, success: 'Número desvinculado correctamente', error: null });
+    }
+
+    // Validar entrada básica
+    if (!phone || !country_code) {
+      const baseUser = usuarioDao.getById(userId);
+      return res.render('change-phone', { title: 'Cambiar teléfono - Soporte', user: baseUser, error: 'Introduce un número y el prefijo', success: null });
+    }
+
+    const normalizedPhone = String(phone).replace(/[^0-9]/g, '');
+    usuarioDao.updatePhone(userId, normalizedPhone, country_code);
+    // Actualizar sesión
+    req.session.user = usuarioDao.getById(userId);
+
+    return res.render('change-phone', { title: 'Cambiar teléfono - Soporte', user: req.session.user, success: 'Teléfono actualizado correctamente', error: null });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/contact', function (req, res, next) {
   const sent = req.query.sent === 'true';
   res.render('contact', { 

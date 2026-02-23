@@ -12,9 +12,20 @@ module.exports = function initializeUsuarios(db) {
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
+      phone TEXT,
+      country_code TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `).run();
+
+  // Acomodar migración en esquemas existentes: añadir columnas si faltan
+  const cols = db.prepare("PRAGMA table_info('usuarios')").all().map(c => c.name);
+  if (!cols.includes('phone')) {
+    try { db.prepare("ALTER TABLE usuarios ADD COLUMN phone TEXT").run(); } catch (e) { }
+  }
+  if (!cols.includes('country_code')) {
+    try { db.prepare("ALTER TABLE usuarios ADD COLUMN country_code TEXT").run(); } catch (e) { }
+  }
 
   const total = db.prepare("SELECT COUNT(*) AS total FROM usuarios").get().total;
   if (total > 0) return;
@@ -32,12 +43,12 @@ module.exports = function initializeUsuarios(db) {
   }
 
   const insert = db.prepare(
-    "INSERT INTO usuarios (id, name, email, password) VALUES (?, ?, ?, ?)"
+    "INSERT INTO usuarios (id, name, email, password, phone, country_code) VALUES (?, ?, ?, ?, ?, ?)"
   );
 
   const tx = db.transaction((rows) => {
     for (const u of rows) {
-      insert.run(u.id, u.name, u.email, u.password);
+      insert.run(u.id, u.name, u.email, u.password, u.phone || null, u.country_code || null);
     }
   });
 
