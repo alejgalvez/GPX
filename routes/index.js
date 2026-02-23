@@ -457,25 +457,53 @@ router.get('/api/chart/:symbol', requireAuth, function (req, res) {
 });
 
 router.get('/deposit', requireAuth, (req, res) => {
-  const coins = monedaDao.getAll();
+  try {
+    const coins = monedaDao.getAll();
+    const history = transaccionDao
+      .listByUserId(req.session.user.id, 50)
+      .filter(t => t.type === 'deposit')
+      .map(t => ({
+        id: t.id,
+        type: 'deposit',
+        currency: t.currency.toLowerCase(),
+        amount: t.amount,
+        fee: t.fee,
+        destination: t.destination || '-',
+        status: (() => {
+          try { return JSON.parse(t.meta || '{}').status || 'completed'; } catch { return 'completed'; }
+        })(),
+        createdAt: t.created_at
+      }));
 
-  res.render('deposit', {
-    title: 'Depositar - Galpe Exchange',
-    user: req.session.user,
-    error: null,
-    success: null,
-    coins
-  });
+    res.render('deposit', {
+      title: 'Depositar - Galpe Exchange',
+      user: req.session.user,
+      error: null,
+      success: null,
+      coins,
+      history
+    });
+  } catch (err) {
+    res.render('deposit', {
+      title: 'Depositar - Galpe Exchange',
+      user: req.session.user,
+      error: null,
+      success: null,
+      coins: [],
+      history: []
+    });
+  }
 });
 
 router.post('/deposit', requireAuth, (req, res, next) => {
   try {
-    const { amount, currency } = req.body;
+    const { amount, currency, destination } = req.body;
+    const coins = monedaDao.getAll();
 
     const curr = (currency || 'eur').toUpperCase();
     const parsedAmount = Number.parseFloat(String(amount).replace(',', '.'));
+    const dest = (destination || '').trim();
 
-    const coins = monedaDao.getAll();
     const allowed = new Set(['EUR', ...coins.map(c => String(c.symbol).toUpperCase())]);
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
@@ -484,7 +512,8 @@ router.post('/deposit', requireAuth, (req, res, next) => {
         user: req.session.user,
         error: 'Introduce una cantidad válida (mayor que 0).',
         success: null,
-        coins
+        coins,
+        history: []
       });
     }
 
@@ -494,21 +523,35 @@ router.post('/deposit', requireAuth, (req, res, next) => {
         user: req.session.user,
         error: 'Moneda no soportada.',
         success: null,
-        coins
+        coins,
+        history: []
+      });
+    }
+
+    if (dest.length < 6) {
+      return res.render('deposit', {
+        title: 'Depositar - Galpe Exchange',
+        user: req.session.user,
+        error: 'Introduce un destino válido (IBAN o wallet).',
+        success: null,
+        coins,
+        history: []
       });
     }
 
     const userId = req.session.user.id;
     walletDao.add(userId, curr, parsedAmount);
 
+    const txId = Date.now().toString();
     transaccionDao.create({
-      id: Date.now().toString(),
+      id: txId,
       user_id: userId,
       type: 'deposit',
       currency: curr,
       amount: parsedAmount,
       fee: 0,
-      meta: { source: 'web' },
+      destination: dest,
+      meta: { status: 'completed' },
       created_at: new Date().toISOString()
     });
 
@@ -526,12 +569,29 @@ router.post('/deposit', requireAuth, (req, res, next) => {
     }
     req.session.user = { ...refreshed, balance, assets };
 
+    const history = transaccionDao
+      .listByUserId(userId, 50)
+      .filter(t => t.type === 'deposit')
+      .map(t => ({
+        id: t.id,
+        type: 'deposit',
+        currency: t.currency.toLowerCase(),
+        amount: t.amount,
+        fee: t.fee,
+        destination: t.destination || '-',
+        status: (() => {
+          try { return JSON.parse(t.meta || '{}').status || 'completed'; } catch { return 'completed'; }
+        })(),
+        createdAt: t.created_at
+      }));
+
     return res.render('deposit', {
       title: 'Depositar - Galpe Exchange',
       user: req.session.user,
       error: null,
       success: `Depósito: +${parsedAmount} ${curr}`,
-      coins
+      coins,
+      history
     });
   } catch (err) {
     next(err);
