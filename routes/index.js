@@ -204,6 +204,70 @@ router.post('/support/change-phone', requireAuth, function (req, res, next) {
   }
 });
 
+// Rutas para restablecer contraseña (acceso público)
+router.get('/support/reset-password', function (req, res, next) {
+  res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: null, success: null });
+});
+
+router.post('/support/reset-password', function (req, res, next) {
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
+    if (!email || !newPassword || !confirmPassword) {
+      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'Rellena todos los campos', success: null });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'Las contraseñas no coinciden', success: null });
+    }
+
+    const user = usuarioDao.getByEmail(email);
+    if (!user) {
+      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'No se encontró ese correo', success: null });
+    }
+
+    usuarioDao.updatePasswordByEmail(email, newPassword);
+    return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: null, success: 'Contraseña actualizada correctamente' });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Congelar / reactivar cuenta (protegido)
+router.get('/support/freeze-account', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    const baseUser = usuarioDao.getById(userId);
+    if (!baseUser) return res.redirect('/auth/logout');
+    res.render('freeze-account', { title: 'Congelar cuenta - Soporte', user: baseUser, error: null, success: null });
+  } catch (e) { next(e); }
+});
+
+router.post('/support/freeze-account', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    usuarioDao.setFrozen(userId, 1);
+    req.session.user = usuarioDao.getById(userId);
+    res.render('freeze-account', { title: 'Congelar cuenta - Soporte', user: req.session.user, success: 'Cuenta congelada. Puedes reactivarla desde esta misma página.', error: null });
+  } catch (e) { next(e); }
+});
+
+router.post('/support/unfreeze-account', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    usuarioDao.setFrozen(userId, 0);
+    req.session.user = usuarioDao.getById(userId);
+    res.redirect('/dashboard');
+  } catch (e) { next(e); }
+});
+
+// Página para cuentas congeladas
+router.get('/support/account-frozen', function (req, res, next) {
+  // Si no hay sesión, redirigir a login
+  if (!req.session.user) return res.redirect('/login');
+  const userId = req.session.user.id;
+  const baseUser = usuarioDao.getById(userId);
+  res.render('account-frozen', { title: 'Cuenta congelada', user: baseUser });
+});
+
 router.get('/contact', function (req, res, next) {
   const sent = req.query.sent === 'true';
   res.render('contact', { 
@@ -410,25 +474,53 @@ router.get('/api/chart/:symbol', requireAuth, function (req, res) {
 });
 
 router.get('/deposit', requireAuth, (req, res) => {
-  const coins = monedaDao.getAll();
+  try {
+    const coins = monedaDao.getAll();
+    const history = transaccionDao
+      .listByUserId(req.session.user.id, 50)
+      .filter(t => t.type === 'deposit')
+      .map(t => ({
+        id: t.id,
+        type: 'deposit',
+        currency: t.currency.toLowerCase(),
+        amount: t.amount,
+        fee: t.fee,
+        destination: t.destination || '-',
+        status: (() => {
+          try { return JSON.parse(t.meta || '{}').status || 'completed'; } catch { return 'completed'; }
+        })(),
+        createdAt: t.created_at
+      }));
 
-  res.render('deposit', {
-    title: 'Depositar - Galpe Exchange',
-    user: req.session.user,
-    error: null,
-    success: null,
-    coins
-  });
+    res.render('deposit', {
+      title: 'Depositar - Galpe Exchange',
+      user: req.session.user,
+      error: null,
+      success: null,
+      coins,
+      history
+    });
+  } catch (err) {
+    res.render('deposit', {
+      title: 'Depositar - Galpe Exchange',
+      user: req.session.user,
+      error: null,
+      success: null,
+      coins: [],
+      history: []
+    });
+  }
 });
 
 router.post('/deposit', requireAuth, (req, res, next) => {
   try {
-    const { amount, currency } = req.body;
+    const { amount, currency, destination } = req.body;
+    const coins = monedaDao.getAll();
 
     const curr = (currency || 'eur').toUpperCase();
     const parsedAmount = Number.parseFloat(String(amount).replace(',', '.'));
+    const dest = (destination || '').trim();
 
-    const coins = monedaDao.getAll();
     const allowed = new Set(['EUR', ...coins.map(c => String(c.symbol).toUpperCase())]);
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
@@ -437,7 +529,8 @@ router.post('/deposit', requireAuth, (req, res, next) => {
         user: req.session.user,
         error: 'Introduce una cantidad válida (mayor que 0).',
         success: null,
-        coins
+        coins,
+        history: []
       });
     }
 
@@ -447,21 +540,35 @@ router.post('/deposit', requireAuth, (req, res, next) => {
         user: req.session.user,
         error: 'Moneda no soportada.',
         success: null,
-        coins
+        coins,
+        history: []
+      });
+    }
+
+    if (dest.length < 6) {
+      return res.render('deposit', {
+        title: 'Depositar - Galpe Exchange',
+        user: req.session.user,
+        error: 'Introduce un destino válido (IBAN o wallet).',
+        success: null,
+        coins,
+        history: []
       });
     }
 
     const userId = req.session.user.id;
     walletDao.add(userId, curr, parsedAmount);
 
+    const txId = Date.now().toString();
     transaccionDao.create({
-      id: Date.now().toString(),
+      id: txId,
       user_id: userId,
       type: 'deposit',
       currency: curr,
       amount: parsedAmount,
       fee: 0,
-      meta: { source: 'web' },
+      destination: dest,
+      meta: { status: 'completed' },
       created_at: new Date().toISOString()
     });
 
@@ -479,12 +586,29 @@ router.post('/deposit', requireAuth, (req, res, next) => {
     }
     req.session.user = { ...refreshed, balance, assets };
 
+    const history = transaccionDao
+      .listByUserId(userId, 50)
+      .filter(t => t.type === 'deposit')
+      .map(t => ({
+        id: t.id,
+        type: 'deposit',
+        currency: t.currency.toLowerCase(),
+        amount: t.amount,
+        fee: t.fee,
+        destination: t.destination || '-',
+        status: (() => {
+          try { return JSON.parse(t.meta || '{}').status || 'completed'; } catch { return 'completed'; }
+        })(),
+        createdAt: t.created_at
+      }));
+
     return res.render('deposit', {
       title: 'Depositar - Galpe Exchange',
       user: req.session.user,
       error: null,
       success: `Depósito: +${parsedAmount} ${curr}`,
-      coins
+      coins,
+      history
     });
   } catch (err) {
     next(err);

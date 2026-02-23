@@ -14,6 +14,7 @@ module.exports = function initializeUsuarios(db) {
       password TEXT NOT NULL,
       phone TEXT,
       country_code TEXT,
+      frozen INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `).run();
@@ -25,6 +26,9 @@ module.exports = function initializeUsuarios(db) {
   }
   if (!cols.includes('country_code')) {
     try { db.prepare("ALTER TABLE usuarios ADD COLUMN country_code TEXT").run(); } catch (e) { }
+  }
+  if (!cols.includes('frozen')) {
+    try { db.prepare("ALTER TABLE usuarios ADD COLUMN frozen INTEGER NOT NULL DEFAULT 0").run(); } catch (e) { }
   }
 
   const total = db.prepare("SELECT COUNT(*) AS total FROM usuarios").get().total;
