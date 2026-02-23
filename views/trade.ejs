@@ -29,7 +29,7 @@
                             class="pair-item <%= c.symbol === coin.symbol ? 'active' : '' %>">
                             <div class="pair-info">
                                 <span class="pair-name">
-                                    <%= c.symbol %>/USDT
+                                    <%= c.symbol %>/EUR
                                 </span>
                                 <span class="pair-price">
                                     <%= c.price_eur %> €
@@ -50,14 +50,14 @@
                 <div class="coin-header">
                     <div class="coin-title">
                         <%- include('partials/coin-icon', { symbol: coin.symbol }) %>
-                        <div>
-                            <h1>
-                                <%= coin.symbol %>/USDT
-                            </h1>
-                            <p class="coin-name-full">
-                                <%= coin.name %>
-                            </p>
-                        </div>
+                            <div>
+                                <h1>
+                                    <%= coin.symbol %>/EUR
+                                </h1>
+                                <p class="coin-name-full">
+                                    <%= coin.name %>
+                                </p>
+                            </div>
                     </div>
                     <div class="coin-stats">
                         <div class="stat">
@@ -119,32 +119,25 @@
                             <label>Precio</label>
                             <div class="input-group">
                                 <input type="number" step="0.01" value="<%= coin.price_eur %>" id="buyPrice">
-                                <span class="input-suffix">USDT</span>
+                                <span class="input-suffix">EUR</span>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <label>Cantidad</label>
                             <div class="input-group">
-                                <input type="number" step="0.00000001" placeholder="0.00" id="buyAmount">
+                                <input type="number" placeholder="0.00" id="buyAmount">
                                 <span class="input-suffix">
                                     <%= coin.symbol %>
                                 </span>
                             </div>
                         </div>
 
-                        <div class="percentage-buttons">
-                            <button type="button" class="percent-btn" data-percent="25">25%</button>
-                            <button type="button" class="percent-btn" data-percent="50">50%</button>
-                            <button type="button" class="percent-btn" data-percent="75">75%</button>
-                            <button type="button" class="percent-btn" data-percent="100">100%</button>
-                        </div>
-
                         <div class="form-row">
                             <label>Total</label>
                             <div class="input-group">
                                 <input type="number" step="0.01" placeholder="0.00" id="buyTotal" readonly>
-                                <span class="input-suffix">USDT</span>
+                                <span class="input-suffix">EUR</span>
                             </div>
                         </div>
 
@@ -156,7 +149,7 @@
                             <label>Precio</label>
                             <div class="input-group">
                                 <input type="number" step="0.01" value="<%= coin.price_eur %>" id="sellPrice">
-                                <span class="input-suffix">USDT</span>
+                                <span class="input-suffix">EUR</span>
                             </div>
                         </div>
 
@@ -170,18 +163,11 @@
                             </div>
                         </div>
 
-                        <div class="percentage-buttons">
-                            <button type="button" class="percent-btn" data-percent="25">25%</button>
-                            <button type="button" class="percent-btn" data-percent="50">50%</button>
-                            <button type="button" class="percent-btn" data-percent="75">75%</button>
-                            <button type="button" class="percent-btn" data-percent="100">100%</button>
-                        </div>
-
                         <div class="form-row">
                             <label>Total</label>
                             <div class="input-group">
                                 <input type="number" step="0.01" placeholder="0.00" id="sellTotal" readonly>
-                                <span class="input-suffix">USDT</span>
+                                <span class="input-suffix">EUR</span>
                             </div>
                         </div>
 
@@ -198,27 +184,27 @@
                 </div>
                 <div class="orderbook-content">
                     <div class="orderbook-headers">
-                        <span>Precio (USDT)</span>
+                        <span>Precio (EUR)</span>
                         <span>Cantidad (<%= coin.symbol %>)</span>
                         <span>Total</span>
                     </div>
 
                     <!-- Sell orders (asks) -->
                     <div class="orderbook-sells">
-                        <% for(let i=0; i < 10; i++) { const price=(coin.price_eur * (1 + (i * 0.001))).toFixed(2);
-                            const amount=(Math.random() * 2).toFixed(4); const total=(price * amount).toFixed(2); %>
-                            <div class="order-row sell-order">
-                                <span class="order-price negative">
-                                    <%= price %>
-                                </span>
-                                <span class="order-amount">
-                                    <%= amount %>
-                                </span>
-                                <span class="order-total">
-                                    <%= total %>
-                                </span>
-                            </div>
-                            <% } %>
+                        <% for(let i=0; i < 10; i++) { const price=(coin.price_eur * (1 + (i * 0.001))).toFixed(2);%>
+                            <%const amount=(Math.random() * 2).toFixed(4); const total=(price * amount).toFixed(2); %>
+                                <div class="order-row sell-order">
+                                    <span class="order-price negative">
+                                        <%= price %>
+                                    </span>
+                                    <span class="order-amount">
+                                        <%= amount %>
+                                    </span>
+                                    <span class="order-total">
+                                        <%= total %>
+                                    </span>
+                                </div>
+                                <% } %>
                     </div>
 
                     <!-- Current price -->
@@ -230,20 +216,20 @@
 
                     <!-- Buy orders (bids) -->
                     <div class="orderbook-buys">
-                        <% for(let i=0; i < 10; i++) { const price=(coin.price_eur * (1 - (i * 0.001))).toFixed(2);
-                            const amount=(Math.random() * 2).toFixed(4); const total=(price * amount).toFixed(2); %>
-                            <div class="order-row buy-order">
-                                <span class="order-price positive">
-                                    <%= price %>
-                                </span>
-                                <span class="order-amount">
-                                    <%= amount %>
-                                </span>
-                                <span class="order-total">
-                                    <%= total %>
-                                </span>
-                            </div>
-                            <% } %>
+                        <% for(let i=0; i < 10; i++) { const price=(coin.price_eur * (1 - (i * 0.001))).toFixed(2);%>
+                            <%const amount=(Math.random() * 2).toFixed(4); const total=(price * amount).toFixed(2); %>
+                                <div class="order-row buy-order">
+                                    <span class="order-price positive">
+                                        <%= price %>
+                                    </span>
+                                    <span class="order-amount">
+                                        <%= amount %>
+                                    </span>
+                                    <span class="order-total">
+                                        <%= total %>
+                                    </span>
+                                </div>
+                                <% } %>
                     </div>
                 </div>
             </aside>
@@ -252,6 +238,13 @@
 
         <!-- Chart.js desde CDN -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <script>
+            const coinChange24h =
+                (typeof coin !== 'undefined' && coin && typeof coin.change_24h === 'number')
+                    ? coin.change_24h
+                    : 0;
+        </script>
 
         <script>
             // Trading form tabs
@@ -284,7 +277,7 @@
             let priceChart = null;
 
             function createOrUpdateChart(labels, data) {
-                const isPositive = data.length > 1 ? (data[data.length - 1] - data[0]) >= 0 : <%= coin.change_24h >= 0 ? 'true' : 'false' %>;
+                const isPositive = data.length > 1 ? (data[data.length - 1] - data[0]) >= 0 : (coinChange24h >= 0);
                 const lineColor = isPositive ? '#00ff88' : '#ff4d4d';
                 const bgColor = isPositive ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 77, 77, 0.1)';
 
@@ -386,7 +379,7 @@
             // Carga inicial con el timeframe por defecto (7d)
             loadChartData(currentTimeframe);
 
-            // --- Actualizar precio desde el backend cada minuto ---
+            // Actualizar precio desde el backend cada 30 segundos 
             async function fetchAndUpdatePrice() {
                 try {
                     const response = await fetch('/api/prices/<%= coin.symbol %>');
@@ -447,9 +440,130 @@
                 }
             }
 
-            // Llamada inicial y cada 60 segundos
+            // Llamada inicial y cada 30 segundos
             fetchAndUpdatePrice();
             setInterval(fetchAndUpdatePrice, 30000);
+
+            // ===== MANEJO DE COMPRA/VENTA =====
+            const coinSymbol = '<%= coin.symbol %>';
+
+            // Manejar envío del formulario de compra
+            document.getElementById('buyForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const amount = parseFloat(document.getElementById('buyAmount').value);
+                const price = parseFloat(document.getElementById('buyPrice').value);
+
+                if (!amount || amount <= 0) {
+                    alert('Por favor ingresa una cantidad válida');
+                    return;
+                }
+
+                if (!price || price <= 0) {
+                    alert('Por favor ingresa un precio válido');
+                    return;
+                }
+
+                const total = (amount * price).toFixed(2);
+                const confirmMsg = `¿Confirmar compra?\n\nMoneda: ${coinSymbol}\nCantidad: ${amount}\nPrecio: ${price} EUR\nTotal: ${total} EUR`;
+
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/trade/buy', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            symbol: coinSymbol,
+                            amount: amount,
+                            price: price
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('✅ ' + data.message + '\n\nNuevo saldo EUR: ' + data.newEurBalance.toFixed(2) + '\nNuevo saldo ' + coinSymbol + ': ' + data.newCoinBalance.toFixed(8));
+                        
+                        // Limpiar formulario
+                        document.getElementById('buyAmount').value = '';
+                        document.getElementById('buyTotal').value = '';
+                        
+                        // Recargar página para reflejar cambios
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        alert('❌ Error: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al procesar la compra: ' + error.message);
+                }
+            });
+
+            // Manejar envío del formulario de venta
+            document.getElementById('sellForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const amount = parseFloat(document.getElementById('sellAmount').value);
+                const price = parseFloat(document.getElementById('sellPrice').value);
+
+                if (!amount || amount <= 0) {
+                    alert('Por favor ingresa una cantidad válida');
+                    return;
+                }
+
+                if (!price || price <= 0) {
+                    alert('Por favor ingresa un precio válido');
+                    return;
+                }
+
+                const total = (amount * price).toFixed(2);
+                const confirmMsg = `¿Confirmar venta?\n\nMoneda: ${coinSymbol}\nCantidad: ${amount}\nPrecio: ${price} EUR\nTotal: ${total} EUR`;
+
+                if (!confirm(confirmMsg)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/trade/sell', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            symbol: coinSymbol,
+                            amount: amount,
+                            price: price
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('✅ ' + data.message + '\n\nNuevo saldo EUR: ' + data.newEurBalance.toFixed(2) + '\nNuevo saldo ' + coinSymbol + ': ' + data.newCoinBalance.toFixed(8));
+                        
+                        // Limpiar formulario
+                        document.getElementById('sellAmount').value = '';
+                        document.getElementById('sellTotal').value = '';
+                        
+                        // Recargar página para reflejar cambios
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        alert('❌ Error: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al procesar la venta: ' + error.message);
+                }
+            });
         </script>
 
 </body>
