@@ -135,6 +135,23 @@ router.get('/', async function (req, res, next) {
   }
 });
 
+// Páginas corporativas
+router.get('/about', function (req, res, next) {
+  res.render('about', { title: 'Sobre nosotros - Galpe Exchange' });
+});
+
+router.get('/news', function (req, res, next) {
+  res.render('news', { title: 'Noticias y anuncios - Galpe Exchange' });
+});
+
+router.get('/terms', function (req, res, next) {
+  res.render('terms', { title: 'Condiciones de uso - Galpe Exchange' });
+});
+
+router.get('/privacy', function (req, res, next) {
+  res.render('privacy', { title: 'Política de privacidad - Galpe Exchange' });
+});
+
 router.get('/support', function (req, res, next) {
   res.render('support', { title: 'Soporte - Galpe Exchange' });
 });
