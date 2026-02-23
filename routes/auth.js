@@ -66,9 +66,9 @@ router.post('/login', function (req, res, next) {
 // POST register - Registrar nuevo usuario
 router.post('/register', function (req, res, next) {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, country_code } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phone || !country_code) {
       return res.render('register', {
         title: 'Registrarse - Galpe Exchange',
         error: 'Todos los campos son obligatorios'
@@ -90,7 +90,9 @@ router.post('/register', function (req, res, next) {
       });
     }
 
-    const created = usuarioDao.create({ name, email, password });
+    // Normalizar teléfono simple: quitar espacios y guiones
+    const normalizedPhone = String(phone || '').replace(/[^0-9]/g, '');
+    const created = usuarioDao.create({ name, email, password, phone: normalizedPhone, country_code });
 
     // Crear wallets base
     walletDao.upsert(created.id, 'EUR', 0);
