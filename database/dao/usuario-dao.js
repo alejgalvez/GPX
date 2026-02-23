@@ -7,7 +7,7 @@ class UsuarioDAO {
 
   getById(id) {
     return this.#db.prepare(
-      "SELECT id, name, email, phone, country_code, created_at FROM usuarios WHERE id = ?"
+      "SELECT id, name, email, phone, country_code, frozen, created_at FROM usuarios WHERE id = ?"
     ).get(id) || null;
   }
 
@@ -19,14 +19,14 @@ class UsuarioDAO {
 
   getByEmail(email) {
     return this.#db.prepare(
-      "SELECT id, name, email, phone, country_code, created_at FROM usuarios WHERE email = ?"
+      "SELECT id, name, email, phone, country_code, frozen, created_at FROM usuarios WHERE email = ?"
     ).get(email) || null;
   }
 
   authenticate(email, password) {
     // Nota: en producción deberías usar bcrypt.
     return this.#db.prepare(
-      "SELECT id, name, email, phone, country_code, created_at FROM usuarios WHERE email = ? AND password = ?"
+      "SELECT id, name, email, phone, country_code, frozen, created_at FROM usuarios WHERE email = ? AND password = ?"
     ).get(email, password) || null;
   }
 
@@ -42,6 +42,12 @@ class UsuarioDAO {
 
   updatePhone(userId, phone, country_code) {
     this.#db.prepare("UPDATE usuarios SET phone = ?, country_code = ? WHERE id = ?").run(phone, country_code, userId);
+    return this.getById(userId);
+  }
+
+  setFrozen(userId, frozen) {
+    const v = frozen ? 1 : 0;
+    this.#db.prepare("UPDATE usuarios SET frozen = ? WHERE id = ?").run(v, userId);
     return this.getById(userId);
   }
 

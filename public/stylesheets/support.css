@@ -228,6 +228,58 @@ body.support-page {
     margin-right: auto;
 }
 
+/* New card layout for freeze/account pages */
+.support-panel {
+    display: flex;
+    justify-content: center;
+    padding: 40px 0 80px 0;
+}
+
+.support-card {
+    width: 100%;
+    max-width: 880px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 36px 40px;
+    box-shadow: 0 8px 30px rgba(16,24,40,0.06);
+    border: 1px solid rgba(0,0,0,0.04);
+}
+
+.support-card-title {
+    font-size: 30px;
+    margin: 0 0 8px 0;
+    font-weight: 800;
+}
+
+.support-card-desc {
+    color: #333;
+    margin: 0 0 18px 0;
+    line-height: 1.6;
+}
+
+.muted {
+    color: #6b6b6b;
+    font-size: 14px;
+}
+
+/* Button tweaks to match site design */
+.support-card .btn-primary {
+    background-color: var(--primary-color);
+    border: none;
+    padding: 12px 22px;
+    border-radius: 10px;
+    color: #000;
+    font-weight: 700;
+}
+
+.support-card .btn-outline {
+    border: 1px solid rgba(0,0,0,0.08);
+    padding: 10px 16px;
+    border-radius: 10px;
+    color: #333;
+    background: #fff;
+}
+
 .contact-banner h2 {
     margin-bottom: 10px;
     font-size: 22px;
@@ -288,6 +340,35 @@ body.support-page footer {
     background-color: #f9f9f9;
     color: #000;
     border-top: 1px solid #eee;
+}
+
+/* For specific pages that need a pure white header/footer (e.g. freeze/unfreeze pages) */
+body.support-page.white-layout header {
+    background-color: #ffffff !important;
+    color: #000 !important;
+    border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+body.support-page.white-layout header a {
+    color: #000 !important;
+}
+
+body.support-page.white-layout footer {
+    background-color: #ffffff !important;
+    color: #000 !important;
+    border-top: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+/* Ensure header buttons look appropriate on white background */
+body.support-page.white-layout header .btn-register {
+    background-color: #fff !important;
+    color: #333 !important;
+    border: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+body.support-page.white-layout header .btn-login {
+    background-color: #000 !important;
+    color: #fff !important;
 }
 
 body.support-page .footer-col h4 {
