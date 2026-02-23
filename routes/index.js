@@ -187,6 +187,70 @@ router.post('/support/change-phone', requireAuth, function (req, res, next) {
   }
 });
 
+// Rutas para restablecer contraseña (acceso público)
+router.get('/support/reset-password', function (req, res, next) {
+  res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: null, success: null });
+});
+
+router.post('/support/reset-password', function (req, res, next) {
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
+    if (!email || !newPassword || !confirmPassword) {
+      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'Rellena todos los campos', success: null });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'Las contraseñas no coinciden', success: null });
+    }
+
+    const user = usuarioDao.getByEmail(email);
+    if (!user) {
+      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'No se encontró ese correo', success: null });
+    }
+
+    usuarioDao.updatePasswordByEmail(email, newPassword);
+    return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: null, success: 'Contraseña actualizada correctamente' });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Congelar / reactivar cuenta (protegido)
+router.get('/support/freeze-account', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    const baseUser = usuarioDao.getById(userId);
+    if (!baseUser) return res.redirect('/auth/logout');
+    res.render('freeze-account', { title: 'Congelar cuenta - Soporte', user: baseUser, error: null, success: null });
+  } catch (e) { next(e); }
+});
+
+router.post('/support/freeze-account', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    usuarioDao.setFrozen(userId, 1);
+    req.session.user = usuarioDao.getById(userId);
+    res.render('freeze-account', { title: 'Congelar cuenta - Soporte', user: req.session.user, success: 'Cuenta congelada. Puedes reactivarla desde esta misma página.', error: null });
+  } catch (e) { next(e); }
+});
+
+router.post('/support/unfreeze-account', requireAuth, function (req, res, next) {
+  try {
+    const userId = req.session.user.id;
+    usuarioDao.setFrozen(userId, 0);
+    req.session.user = usuarioDao.getById(userId);
+    res.redirect('/dashboard');
+  } catch (e) { next(e); }
+});
+
+// Página para cuentas congeladas
+router.get('/support/account-frozen', function (req, res, next) {
+  // Si no hay sesión, redirigir a login
+  if (!req.session.user) return res.redirect('/login');
+  const userId = req.session.user.id;
+  const baseUser = usuarioDao.getById(userId);
+  res.render('account-frozen', { title: 'Cuenta congelada', user: baseUser });
+});
+
 router.get('/contact', function (req, res, next) {
   const sent = req.query.sent === 'true';
   res.render('contact', { 
