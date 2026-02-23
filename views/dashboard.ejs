@@ -27,7 +27,7 @@
                     <div class="balance-header">
                         <h2>Tu balance</h2>
                         <button type="button" class="balance-eye-toggle" aria-label="Ocultar o mostrar saldo">
-                            <img src="/images/panel-icon.svg" alt="Panel" class="panel-icon">
+                            👁️
                         </button>
                     </div>
                     <% if (locals.user && user.balance) { %>
@@ -116,20 +116,27 @@
                 </tbody>
             </table>
 
-            <div class="news-grid">
-                <div class="news-card">
-                    <div class="news-meta">Hace 10 minutos</div>
-                    <div class="news-title">SoFi Technologies eleva su previsión...</div>
-                    <div class="news-excerpt">Según BlockBeats, SoFi Technologies ha aumentado su previsión de
-                        beneficios anuales...</div>
-                </div>
-                <div class="news-card">
-                    <div class="news-meta">Hace 18 minutos</div>
-                    <div class="news-title">SharpLink invertirá $200 millones en ETH...</div>
-                    <div class="news-excerpt">Según PANews, SharpLink ha anunciado una colaboración con ether.fi...
+
+            <section class="ai-dashboard-section">
+                <div class="ai-card">
+                    <div class="ai-card-header">
+                        <div>
+                            <div class="ai-tag">Galpe AI Analyst</div>
+                            <h4 class="ai-title">Análisis automático del mercado</h4>
+                        </div>
                     </div>
+                    <p class="ai-description">
+                        Nuestra IA analiza en tiempo real las noticias más recientes del sector crypto y genera un
+                        breve informe con el sentimiento predominante del mercado.
+                    </p>
+                    <div class="ai-actions">
+                        <button onclick="consultarIA()" id="btn-ia" class="ai-button">
+                         Analizar mercado
+                        </button>
+                    </div>
+                    <div id="resultado-ia" class="ai-result"></div>
                 </div>
-            </div>
+            </section>
 
         </div>
 
@@ -214,6 +221,37 @@
 
                 updateDisplay();
             });
+
+            // Lógica para conectar con la IA (noticias en dashboard)
+            window.consultarIA = async function consultarIA() {
+                const btn = document.getElementById('btn-ia');
+                const output = document.getElementById('resultado-ia');
+
+                if (!btn || !output) return;
+
+                btn.disabled = true;
+                btn.innerHTML = "📡 Analizando datos...";
+                btn.style.opacity = "0.7";
+                output.style.display = "block";
+                output.innerHTML = "<i>Conectando con los servidores de noticias globales...</i>";
+
+                try {
+                    const response = await fetch('/api/ai-analysis');
+                    const data = await response.json();
+
+                    if (data.success) {
+                        output.innerHTML = "<strong>📊 INFORME GALPE:</strong><br><br>" + data.analysis;
+                    } else {
+                        output.innerHTML = "❌ Error: " + (data.error || 'No se pudo obtener el análisis.');
+                    }
+                } catch (error) {
+                    output.innerHTML = "❌ Error de conexión. Inténtalo de nuevo.";
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = "⚡ Analizar mercado ahora";
+                    btn.style.opacity = "1";
+                }
+            }
         </script>
 
 </body>

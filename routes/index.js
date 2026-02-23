@@ -204,70 +204,6 @@ router.post('/support/change-phone', requireAuth, function (req, res, next) {
   }
 });
 
-// Rutas para restablecer contraseña (acceso público)
-router.get('/support/reset-password', function (req, res, next) {
-  res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: null, success: null });
-});
-
-router.post('/support/reset-password', function (req, res, next) {
-  try {
-    const { email, newPassword, confirmPassword } = req.body;
-    if (!email || !newPassword || !confirmPassword) {
-      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'Rellena todos los campos', success: null });
-    }
-    if (newPassword !== confirmPassword) {
-      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'Las contraseñas no coinciden', success: null });
-    }
-
-    const user = usuarioDao.getByEmail(email);
-    if (!user) {
-      return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: 'No se encontró ese correo', success: null });
-    }
-
-    usuarioDao.updatePasswordByEmail(email, newPassword);
-    return res.render('reset-password', { title: 'Cambiar contraseña - Soporte', error: null, success: 'Contraseña actualizada correctamente' });
-  } catch (e) {
-    next(e);
-  }
-});
-
-// Congelar / reactivar cuenta (protegido)
-router.get('/support/freeze-account', requireAuth, function (req, res, next) {
-  try {
-    const userId = req.session.user.id;
-    const baseUser = usuarioDao.getById(userId);
-    if (!baseUser) return res.redirect('/auth/logout');
-    res.render('freeze-account', { title: 'Congelar cuenta - Soporte', user: baseUser, error: null, success: null });
-  } catch (e) { next(e); }
-});
-
-router.post('/support/freeze-account', requireAuth, function (req, res, next) {
-  try {
-    const userId = req.session.user.id;
-    usuarioDao.setFrozen(userId, 1);
-    req.session.user = usuarioDao.getById(userId);
-    res.render('freeze-account', { title: 'Congelar cuenta - Soporte', user: req.session.user, success: 'Cuenta congelada. Puedes reactivarla desde esta misma página.', error: null });
-  } catch (e) { next(e); }
-});
-
-router.post('/support/unfreeze-account', requireAuth, function (req, res, next) {
-  try {
-    const userId = req.session.user.id;
-    usuarioDao.setFrozen(userId, 0);
-    req.session.user = usuarioDao.getById(userId);
-    res.redirect('/dashboard');
-  } catch (e) { next(e); }
-});
-
-// Página para cuentas congeladas
-router.get('/support/account-frozen', function (req, res, next) {
-  // Si no hay sesión, redirigir a login
-  if (!req.session.user) return res.redirect('/login');
-  const userId = req.session.user.id;
-  const baseUser = usuarioDao.getById(userId);
-  res.render('account-frozen', { title: 'Cuenta congelada', user: baseUser });
-});
-
 router.get('/contact', function (req, res, next) {
   const sent = req.query.sent === 'true';
   res.render('contact', { 
@@ -474,53 +410,25 @@ router.get('/api/chart/:symbol', requireAuth, function (req, res) {
 });
 
 router.get('/deposit', requireAuth, (req, res) => {
-  try {
-    const coins = monedaDao.getAll();
-    const history = transaccionDao
-      .listByUserId(req.session.user.id, 50)
-      .filter(t => t.type === 'deposit')
-      .map(t => ({
-        id: t.id,
-        type: 'deposit',
-        currency: t.currency.toLowerCase(),
-        amount: t.amount,
-        fee: t.fee,
-        destination: t.destination || '-',
-        status: (() => {
-          try { return JSON.parse(t.meta || '{}').status || 'completed'; } catch { return 'completed'; }
-        })(),
-        createdAt: t.created_at
-      }));
+  const coins = monedaDao.getAll();
 
-    res.render('deposit', {
-      title: 'Depositar - Galpe Exchange',
-      user: req.session.user,
-      error: null,
-      success: null,
-      coins,
-      history
-    });
-  } catch (err) {
-    res.render('deposit', {
-      title: 'Depositar - Galpe Exchange',
-      user: req.session.user,
-      error: null,
-      success: null,
-      coins: [],
-      history: []
-    });
-  }
+  res.render('deposit', {
+    title: 'Depositar - Galpe Exchange',
+    user: req.session.user,
+    error: null,
+    success: null,
+    coins
+  });
 });
 
 router.post('/deposit', requireAuth, (req, res, next) => {
   try {
-    const { amount, currency, destination } = req.body;
-    const coins = monedaDao.getAll();
+    const { amount, currency } = req.body;
 
     const curr = (currency || 'eur').toUpperCase();
     const parsedAmount = Number.parseFloat(String(amount).replace(',', '.'));
-    const dest = (destination || '').trim();
 
+    const coins = monedaDao.getAll();
     const allowed = new Set(['EUR', ...coins.map(c => String(c.symbol).toUpperCase())]);
 
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
@@ -529,8 +437,7 @@ router.post('/deposit', requireAuth, (req, res, next) => {
         user: req.session.user,
         error: 'Introduce una cantidad válida (mayor que 0).',
         success: null,
-        coins,
-        history: []
+        coins
       });
     }
 
@@ -540,35 +447,21 @@ router.post('/deposit', requireAuth, (req, res, next) => {
         user: req.session.user,
         error: 'Moneda no soportada.',
         success: null,
-        coins,
-        history: []
-      });
-    }
-
-    if (dest.length < 6) {
-      return res.render('deposit', {
-        title: 'Depositar - Galpe Exchange',
-        user: req.session.user,
-        error: 'Introduce un destino válido (IBAN o wallet).',
-        success: null,
-        coins,
-        history: []
+        coins
       });
     }
 
     const userId = req.session.user.id;
     walletDao.add(userId, curr, parsedAmount);
 
-    const txId = Date.now().toString();
     transaccionDao.create({
-      id: txId,
+      id: Date.now().toString(),
       user_id: userId,
       type: 'deposit',
       currency: curr,
       amount: parsedAmount,
       fee: 0,
-      destination: dest,
-      meta: { status: 'completed' },
+      meta: { source: 'web' },
       created_at: new Date().toISOString()
     });
 
@@ -586,29 +479,12 @@ router.post('/deposit', requireAuth, (req, res, next) => {
     }
     req.session.user = { ...refreshed, balance, assets };
 
-    const history = transaccionDao
-      .listByUserId(userId, 50)
-      .filter(t => t.type === 'deposit')
-      .map(t => ({
-        id: t.id,
-        type: 'deposit',
-        currency: t.currency.toLowerCase(),
-        amount: t.amount,
-        fee: t.fee,
-        destination: t.destination || '-',
-        status: (() => {
-          try { return JSON.parse(t.meta || '{}').status || 'completed'; } catch { return 'completed'; }
-        })(),
-        createdAt: t.created_at
-      }));
-
     return res.render('deposit', {
       title: 'Depositar - Galpe Exchange',
       user: req.session.user,
       error: null,
       success: `Depósito: +${parsedAmount} ${curr}`,
-      coins,
-      history
+      coins
     });
   } catch (err) {
     next(err);
@@ -977,219 +853,6 @@ router.get('/api/ai-analysis', async (req, res) => {
         analysis: "⚠️ Conectando con los mercados... Por favor, inténtalo en unos segundos."
       });
     }
-  }
-});
-
-// API: obtener balance de una moneda
-router.get('/api/wallet-balance', requireAuth, (req, res) => {
-  try {
-    const currency = (req.query.currency || 'EUR').toUpperCase();
-    const userId = req.session.user.id;
-    
-    const balance = walletDao.getAmount(userId, currency);
-    
-    res.json({
-      success: true,
-      currency: currency,
-      balance: balance
-    });
-  } catch (error) {
-    console.error('Error al obtener balance:', error);
-    res.json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ===== ENDPOINTS DE TRADING =====
-
-// POST: Comprar criptomonedas
-router.post('/trade/buy', requireAuth, (req, res) => {
-  try {
-    const { symbol, amount, price } = req.body;
-    const userId = req.session.user.id;
-
-    // Validaciones
-    if (!symbol || !amount || !price) {
-      return res.json({
-        success: false,
-        error: 'Faltan parámetros requeridos'
-      });
-    }
-
-    const parsedAmount = Number.parseFloat(String(amount).replace(',', '.'));
-    const parsedPrice = Number.parseFloat(String(price).replace(',', '.'));
-
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      return res.json({
-        success: false,
-        error: 'Cantidad no válida'
-      });
-    }
-
-    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
-      return res.json({
-        success: false,
-        error: 'Precio no válido'
-      });
-    }
-
-    // Calcular total a pagar (cantidad * precio)
-    const totalEur = parsedAmount * parsedPrice;
-
-    // Verificar que la moneda existe
-    const coins = monedaDao.getAll();
-    const coin = coins.find(c => c.symbol.toUpperCase() === symbol.toUpperCase());
-
-    if (!coin) {
-      return res.json({
-        success: false,
-        error: 'Moneda no encontrada'
-      });
-    }
-
-    // Verificar saldo suficiente en EUR
-    const eurBalance = walletDao.getAmount(userId, 'EUR');
-    if (eurBalance < totalEur) {
-      return res.json({
-        success: false,
-        error: `Saldo insuficiente. Necesitas ${totalEur.toFixed(2)} EUR pero tienes ${eurBalance.toFixed(2)} EUR`
-      });
-    }
-
-    // Restar EUR
-    walletDao.subtract(userId, 'EUR', totalEur);
-
-    // Añadir moneda
-    walletDao.add(userId, symbol.toUpperCase(), parsedAmount);
-
-    // Registrar transacción de compra
-    transaccionDao.create({
-      id: Date.now().toString(),
-      user_id: userId,
-      type: 'trade_buy',
-      currency: symbol.toUpperCase(),
-      amount: parsedAmount,
-      fee: 0,
-      destination: null,
-      meta: {
-        price_per_unit: parsedPrice,
-        total_eur: totalEur,
-        eur_spent: totalEur,
-        source: 'web'
-      },
-      created_at: new Date().toISOString()
-    });
-
-    res.json({
-      success: true,
-      message: `Compra exitosa: ${parsedAmount} ${symbol} por ${totalEur.toFixed(2)} EUR`,
-      newCoinBalance: walletDao.getAmount(userId, symbol.toUpperCase()),
-      newEurBalance: walletDao.getAmount(userId, 'EUR')
-    });
-
-  } catch (error) {
-    console.error('Error en compra:', error);
-    res.json({
-      success: false,
-      error: error.message || 'Error al procesar la compra'
-    });
-  }
-});
-
-// POST: Vender criptomonedas
-router.post('/trade/sell', requireAuth, (req, res) => {
-  try {
-    const { symbol, amount, price } = req.body;
-    const userId = req.session.user.id;
-
-    // Validaciones
-    if (!symbol || !amount || !price) {
-      return res.json({
-        success: false,
-        error: 'Faltan parámetros requeridos'
-      });
-    }
-
-    const parsedAmount = Number.parseFloat(String(amount).replace(',', '.'));
-    const parsedPrice = Number.parseFloat(String(price).replace(',', '.'));
-
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      return res.json({
-        success: false,
-        error: 'Cantidad no válida'
-      });
-    }
-
-    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
-      return res.json({
-        success: false,
-        error: 'Precio no válido'
-      });
-    }
-
-    // Calcular ingresos (cantidad * precio)
-    const totalEur = parsedAmount * parsedPrice;
-
-    // Verificar que la moneda existe
-    const coins = monedaDao.getAll();
-    const symbolUpper = symbol.toUpperCase();
-    const coin = coins.find(c => c.symbol.toUpperCase() === symbolUpper);
-
-    if (!coin) {
-      return res.json({
-        success: false,
-        error: 'Moneda no encontrada'
-      });
-    }
-
-    // Verificar saldo suficiente de la moneda
-    const coinBalance = walletDao.getAmount(userId, symbolUpper);
-    if (coinBalance < parsedAmount) {
-      return res.json({
-        success: false,
-        error: `Saldo insuficiente. Necesitas ${parsedAmount} ${symbolUpper} pero tienes ${coinBalance} ${symbolUpper}`
-      });
-    }
-
-    // Restar moneda
-    walletDao.subtract(userId, symbolUpper, parsedAmount);
-
-    // Añadir EUR
-    walletDao.add(userId, 'EUR', totalEur);
-
-    // Registrar transacción de venta
-    transaccionDao.create({
-      id: Date.now().toString(),
-      user_id: userId,
-      type: 'trade_sell',
-      currency: symbolUpper,
-      amount: parsedAmount,
-      fee: 0,
-      destination: null,
-      meta: {
-        price_per_unit: parsedPrice,
-        total_eur: totalEur,
-        eur_received: totalEur,
-        source: 'web'
-      },
-      created_at: new Date().toISOString()
-    });
-
-    res.json({
-      success: true,
-      message: `Venta exitosa: ${parsedAmount} ${symbolUpper} por ${totalEur.toFixed(2)} EUR`,
-      newCoinBalance: walletDao.getAmount(userId, symbolUpper),
-      newEurBalance: walletDao.getAmount(userId, 'EUR')
-    });
-
-  } catch (error) {
-    console.error('Error en venta:', error);
-    res.json({
-      success: false,
-      error: error.message || 'Error al procesar la venta'
-    });
   }
 });
 
