@@ -118,7 +118,7 @@
                         <div class="form-row">
                             <label>Precio</label>
                             <div class="input-group">
-                                <input type="number" step="0.01" value="<%= coin.price_eur %>" id="buyPrice">
+                                <input type="number" step="0.0000001" value="<%= coin.price_eur %>" id="buyPrice">
                                 <span class="input-suffix">EUR</span>
                             </div>
                         </div>
@@ -126,7 +126,7 @@
                         <div class="form-row">
                             <label>Cantidad</label>
                             <div class="input-group">
-                                <input type="number" placeholder="0.00" id="buyAmount">
+                                <input type="number" step="0.0000001" placeholder="0.00" id="buyAmount">
                                 <span class="input-suffix">
                                     <%= coin.symbol %>
                                 </span>
@@ -136,7 +136,7 @@
                         <div class="form-row">
                             <label>Total</label>
                             <div class="input-group">
-                                <input type="number" step="0.01" placeholder="0.00" id="buyTotal" readonly>
+                                <input type="number" step="0.00000001" placeholder="0.00" id="buyTotal" readonly>
                                 <span class="input-suffix">EUR</span>
                             </div>
                         </div>

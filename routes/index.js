@@ -409,6 +409,187 @@ router.get('/api/chart/:symbol', requireAuth, function (req, res) {
   });
 });
 
+// === TRADING: BUY ENDPOINT ===
+router.post('/trade/buy', requireAuth, (req, res) => {
+  try {
+    const { symbol, amount, price } = req.body;
+    const symbol_upper = String(symbol || '').toUpperCase();
+    const parsedAmount = Number.parseFloat(amount);
+    const parsedPrice = Number.parseFloat(price);
+
+    const coins = monedaDao.getAll();
+    const coin = coins.find(c => c.symbol === symbol_upper);
+
+    if (!coin) {
+      return res.json({
+        success: false,
+        error: 'Moneda no encontrada'
+      });
+    }
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      return res.json({
+        success: false,
+        error: 'Cantidad inválida'
+      });
+    }
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      return res.json({
+        success: false,
+        error: 'Precio inválido'
+      });
+    }
+
+    const userId = req.session.user.id;
+    const total = parsedAmount * parsedPrice;
+    const eurBalance = walletDao.getAmount(userId, 'EUR');
+
+    if (eurBalance < total) {
+      return res.json({
+        success: false,
+        error: `Fondos insuficientes. Necesitas ${total.toFixed(2)} EUR pero solo tienes ${eurBalance.toFixed(2)} EUR.`
+      });
+    }
+
+    // Realizar la compra
+    walletDao.subtract(userId, 'EUR', total);
+    walletDao.add(userId, symbol_upper, parsedAmount);
+
+    // Crear transacción
+    transaccionDao.create({
+      id: Date.now().toString(),
+      user_id: userId,
+      type: 'trade_buy',
+      currency: symbol_upper,
+      amount: parsedAmount,
+      fee: 0,
+      meta: { price: parsedPrice, cost_eur: total },
+      created_at: new Date().toISOString()
+    });
+
+    // Actualizar sesión
+    const wallets = walletDao.listByUserId(userId);
+    const balance = { eur: 0, btc: 0 };
+    const assets = [];
+    for (const w of wallets) {
+      const c = String(w.currency).toUpperCase();
+      const a = Number(w.amount) || 0;
+      if (c === 'EUR') balance.eur = a;
+      if (c === 'BTC') balance.btc = a;
+      if (c !== 'EUR' && a !== 0) assets.push({ symbol: c, amount: a });
+    }
+    req.session.user = { ...req.session.user, balance, assets };
+
+    const newEurBalance = walletDao.getAmount(userId, 'EUR');
+    const newCoinBalance = walletDao.getAmount(userId, symbol_upper);
+
+    return res.json({
+      success: true,
+      message: `Compra exitosa: ${parsedAmount} ${symbol_upper}`,
+      newEurBalance,
+      newCoinBalance
+    });
+  } catch (error) {
+    console.error('Error en /trade/buy:', error);
+    return res.json({
+      success: false,
+      error: 'Error al procesar la compra'
+    });
+  }
+});
+
+// === TRADING: SELL ENDPOINT ===
+router.post('/trade/sell', requireAuth, (req, res) => {
+  try {
+    const { symbol, amount, price } = req.body;
+    const symbol_upper = String(symbol || '').toUpperCase();
+    const parsedAmount = Number.parseFloat(amount);
+    const parsedPrice = Number.parseFloat(price);
+
+    const coins = monedaDao.getAll();
+    const coin = coins.find(c => c.symbol === symbol_upper);
+
+    if (!coin) {
+      return res.json({
+        success: false,
+        error: 'Moneda no encontrada'
+      });
+    }
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      return res.json({
+        success: false,
+        error: 'Cantidad inválida'
+      });
+    }
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      return res.json({
+        success: false,
+        error: 'Precio inválido'
+      });
+    }
+
+    const userId = req.session.user.id;
+    const coinBalance = walletDao.getAmount(userId, symbol_upper);
+
+    if (coinBalance < parsedAmount) {
+      return res.json({
+        success: false,
+        error: `Fondos insuficientes. Necesitas ${parsedAmount} ${symbol_upper} pero solo tienes ${coinBalance.toFixed(8)} ${symbol_upper}.`
+      });
+    }
+
+    const total = parsedAmount * parsedPrice;
+
+    // Realizar la venta
+    walletDao.subtract(userId, symbol_upper, parsedAmount);
+    walletDao.add(userId, 'EUR', total);
+
+    // Crear transacción
+    transaccionDao.create({
+      id: Date.now().toString(),
+      user_id: userId,
+      type: 'trade_sell',
+      currency: symbol_upper,
+      amount: parsedAmount,
+      fee: 0,
+      meta: { price: parsedPrice, proceeds_eur: total },
+      created_at: new Date().toISOString()
+    });
+
+    // Actualizar sesión
+    const wallets = walletDao.listByUserId(userId);
+    const balance = { eur: 0, btc: 0 };
+    const assets = [];
+    for (const w of wallets) {
+      const c = String(w.currency).toUpperCase();
+      const a = Number(w.amount) || 0;
+      if (c === 'EUR') balance.eur = a;
+      if (c === 'BTC') balance.btc = a;
+      if (c !== 'EUR' && a !== 0) assets.push({ symbol: c, amount: a });
+    }
+    req.session.user = { ...req.session.user, balance, assets };
+
+    const newEurBalance = walletDao.getAmount(userId, 'EUR');
+    const newCoinBalance = walletDao.getAmount(userId, symbol_upper);
+
+    return res.json({
+      success: true,
+      message: `Venta exitosa: ${parsedAmount} ${symbol_upper}`,
+      newEurBalance,
+      newCoinBalance
+    });
+  } catch (error) {
+    console.error('Error en /trade/sell:', error);
+    return res.json({
+      success: false,
+      error: 'Error al procesar la venta'
+    });
+  }
+});
+
 router.get('/deposit', requireAuth, (req, res) => {
   const coins = monedaDao.getAll();
 
